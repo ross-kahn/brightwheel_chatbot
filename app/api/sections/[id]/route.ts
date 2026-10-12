@@ -1,23 +1,19 @@
-import { sql } from "@/lib/db";
+import { deleteSection, updateSection } from "@/lib/db";
+import { errorResponse, parseId, parseSectionInput, readJson } from "@/lib/http";
 
+// Replaces a section's title and text.
 export async function PUT(request: Request, ctx: RouteContext<"/api/sections/[id]">) {
-  const id = Number((await ctx.params).id);
-  const body = await request.json().catch(() => null);
-  const title = typeof body?.title === "string" ? body.title.trim() : "";
-  const text = typeof body?.body === "string" ? body.body.trim() : "";
-  if (!Number.isInteger(id) || !title || !text) {
-    return Response.json({ error: "A title and some text are required." }, { status: 400 });
-  }
-  const [row] = await sql()`
-    UPDATE sections SET title = ${title.slice(0, 200)}, body = ${text}, updated_at = now()
-    WHERE id = ${id} RETURNING *`;
-  if (!row) return Response.json({ error: "Not found" }, { status: 404 });
-  return Response.json(row);
+  const id = parseId((await ctx.params).id);
+  const input = parseSectionInput(await readJson(request));
+  if (!id || !input) return errorResponse("A title and some text are required.");
+  const section = await updateSection(id, input);
+  return section ? Response.json(section) : errorResponse("Not found", 404);
 }
 
+// Deletes a section so the assistant stops using it.
 export async function DELETE(_request: Request, ctx: RouteContext<"/api/sections/[id]">) {
-  const id = Number((await ctx.params).id);
-  if (!Number.isInteger(id)) return Response.json({ error: "Bad request" }, { status: 400 });
-  await sql()`DELETE FROM sections WHERE id = ${id}`;
+  const id = parseId((await ctx.params).id);
+  if (!id) return errorResponse("Bad request");
+  await deleteSection(id);
   return Response.json({ ok: true });
 }

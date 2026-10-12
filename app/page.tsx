@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { CENTER } from "@/lib/center";
+import { sendJson } from "@/lib/http";
 
 type Source = { id: number; title: string; body: string };
 
@@ -28,14 +29,8 @@ const STARTERS = [
 
 const MAX_LENGTH = 500;
 
-function patchQuestion(id: number, body: object) {
-  return fetch(`/api/questions/${id}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-}
-
+// The parent-facing chat. The conversation lives only in this component's
+// state, so a refresh starts a new chat.
 export default function ParentChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -44,6 +39,8 @@ export default function ParentChat() {
   const sessionId = useRef("");
   const bottom = useRef<HTMLDivElement>(null);
 
+  // PROTOTYPE: an anonymous random id groups one visit's questions in the log.
+  // Production would use the signed-in parent.
   useEffect(() => {
     sessionId.current = crypto.randomUUID();
   }, []);
@@ -52,10 +49,13 @@ export default function ParentChat() {
     bottom.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, pending]);
 
+  // Merges new fields into one assistant message (feedback given, contact sent).
   function update(index: number, patch: Partial<Extract<Message, { role: "assistant" }>>) {
     setMessages((all) => all.map((m, i) => (i === index ? ({ ...m, ...patch } as Message) : m)));
   }
 
+  // Sends a question with the chat so far and appends the reply, or an apology
+  // with the phone number if the request fails.
   async function ask(question: string) {
     question = question.trim();
     if (!question || pending) return;
@@ -64,11 +64,7 @@ export default function ParentChat() {
     setInput("");
     setPending(true);
     try {
-      const res = await fetch("/api/ask", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question, history, sessionId: sessionId.current }),
-      });
+      const res = await sendJson("/api/ask", "POST", { question, history, sessionId: sessionId.current });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setMessages((all) => [
@@ -158,7 +154,7 @@ export default function ParentChat() {
                   sensitive={m.mode === "sensitive"}
                   sent={!!m.contactSent}
                   onSend={async (contact) => {
-                    await patchQuestion(m.id!, { contact });
+                    await sendJson(`/api/questions/${m.id}`, "PATCH", { contact });
                     update(i, { contactSent: true });
                   }}
                 />
@@ -177,7 +173,7 @@ export default function ParentChat() {
                           aria-label={f === "up" ? "Helpful" : "Not helpful"}
                           onClick={() => {
                             update(i, { feedback: f });
-                            patchQuestion(m.id!, { feedback: f });
+                            sendJson(`/api/questions/${m.id}`, "PATCH", { feedback: f });
                           }}
                           className="rounded-md px-1.5 py-1 text-base hover:bg-stone-100"
                         >
@@ -253,6 +249,8 @@ export default function ParentChat() {
   );
 }
 
+// The card under an unanswered or sensitive reply: tells the parent a person
+// will follow up and lets them leave contact details if they want to.
 function Handoff({
   sensitive,
   sent,

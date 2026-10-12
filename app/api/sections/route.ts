@@ -1,17 +1,16 @@
-import { listSections, sql } from "@/lib/db";
+// PROTOTYPE: the section routes have no login. Production would require a
+// staff session and keep an edit history.
+import { createSection, listSections } from "@/lib/db";
+import { errorResponse, parseSectionInput, readJson } from "@/lib/http";
 
+// Returns the whole knowledge base for the Knowledge tab.
 export async function GET() {
   return Response.json(await listSections());
 }
 
+// Adds a new knowledge section.
 export async function POST(request: Request) {
-  const body = await request.json().catch(() => null);
-  const title = typeof body?.title === "string" ? body.title.trim() : "";
-  const text = typeof body?.body === "string" ? body.body.trim() : "";
-  if (!title || !text) {
-    return Response.json({ error: "A title and some text are required." }, { status: 400 });
-  }
-  const [row] = await sql()`
-    INSERT INTO sections (title, body) VALUES (${title.slice(0, 200)}, ${text}) RETURNING *`;
-  return Response.json(row);
+  const input = parseSectionInput(await readJson(request));
+  if (!input) return errorResponse("A title and some text are required.");
+  return Response.json(await createSection(input));
 }

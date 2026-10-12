@@ -5,6 +5,10 @@ import { join } from "node:path";
 import { neon } from "@neondatabase/serverless";
 import { QUESTIONS, SECTIONS } from "./seed-data";
 
+// Applies schema.sql, then replaces all rows with the demo sections and questions.
+// PROTOTYPE: this wipes both tables, and the prototype has a single database
+// shared by local and production. Production would use migrations and never
+// truncate.
 async function main() {
   const url = process.env.DATABASE_URL;
   if (!url || !url.startsWith("postgres")) {

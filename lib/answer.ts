@@ -20,6 +20,8 @@ export type Answer = {
 
 export type Turn = { role: "user" | "assistant"; content: string };
 
+// Shown when the model call fails or declines, so the parent is never left
+// without a next step.
 const HANDOFF: Answer = {
   answer: `I'm not able to answer that one myself, so I've passed it to the front desk. If it's urgent, please call us at ${CENTER.phone}.`,
   mode: "unknown",
@@ -27,8 +29,11 @@ const HANDOFF: Answer = {
   section_ids: [],
 };
 
-// Everything in this prompt is stable between requests so it can be cached.
-// The date and the question go in the user turn instead.
+// Builds the instructions plus the full knowledge base. Everything here is
+// stable between requests so it can be cached; the date and the question go in
+// the user turn instead.
+// PROTOTYPE: the whole knowledge base is sent every time, which suits one
+// handbook. A much larger knowledge base would need retrieval instead.
 function systemPrompt(sections: Section[]): string {
   const knowledge = sections
     .map((s) => `<section id="${s.id}" title="${s.title}">\n${s.body}\n</section>`)
@@ -61,6 +66,9 @@ ${knowledge}
 
 let client: Anthropic | undefined;
 
+// Asks Claude to answer one question from the given sections and returns a
+// checked, structured answer. Never throws: any failure becomes the hand-off
+// reply with `failed: true` so the caller can route it to staff.
 export async function answerQuestion(
   question: string,
   history: Turn[],
@@ -93,6 +101,8 @@ export async function answerQuestion(
       },
     });
 
+    // PROTOTYPE: token usage only goes to the server log. Production would
+    // record it per question for cost tracking.
     console.log("claude usage", {
       cache_read: response.usage.cache_read_input_tokens,
       cache_write: response.usage.cache_creation_input_tokens,
@@ -105,6 +115,7 @@ export async function answerQuestion(
       return { answer: HANDOFF, failed: true };
     }
 
+    // Drop citations to sections that don't exist.
     const section_ids = [...new Set(parsed.section_ids)].filter((id) =>
       validIds.has(id),
     );

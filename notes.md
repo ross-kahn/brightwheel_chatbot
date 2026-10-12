@@ -19,4 +19,8 @@
 Time logging:
 Notes - 10 min
 Planning - 20 min
-Initial prototyping - 30 min
+Initial prototyping - 45 min
+
+Ok let's work on the writeup. Among the other things to talk about, I want to focus on usability, observability, iterative improvement of the knowledge base, token usage considerations, storage considerations, privacy considerations, security (how easily could malicious users get sensitive information from the kowledge base or previously asked questions), architecture considerations for a production MVP, and maybe more.
+
+Since there's still some time to spare, is there any kind of testing harness or accuracy eval we could add? Unless you look up the answer in the handbook yourself, it's difficult to know whether the answers are accurate. Although I guess that's what the knowledge linking badges are for

@@ -1,38 +1,33 @@
-import { sql } from "@/lib/db";
+import { dismissQuestion, resolveQuestion, setContact, setFeedback } from "@/lib/db";
+import { errorResponse, parseId, readJson } from "@/lib/http";
 
-// One endpoint for everything that can happen to a logged question:
+// Applies one change to a logged question, chosen by the body:
 //   { feedback: "up" | "down" }   parent rates the answer
 //   { contact: string }           parent leaves a way to reach them
-//   { resolve: { title, body } }  operator writes the answer, which becomes knowledge
+//   { resolve: { body, title? } } operator's answer becomes knowledge
 //   { dismiss: true }             operator marks it as needing no change
+// PROTOTYPE: parent and operator actions share one unauthenticated route, so
+// anyone could add knowledge by calling "resolve". Production would split
+// these into a parent route (tied to their own question) and a staff route.
 export async function PATCH(request: Request, ctx: RouteContext<"/api/questions/[id]">) {
-  const id = Number((await ctx.params).id);
-  const body = await request.json().catch(() => null);
-  if (!Number.isInteger(id) || !body) {
-    return Response.json({ error: "Bad request" }, { status: 400 });
-  }
-  const db = sql();
+  const id = parseId((await ctx.params).id);
+  const body = await readJson(request);
+  if (!id || !body) return errorResponse("Bad request");
+
+  const resolve = body.resolve as { body?: unknown; title?: unknown } | undefined;
 
   if (body.feedback === "up" || body.feedback === "down") {
-    await db`
-      UPDATE questions
-      SET feedback = ${body.feedback},
-          status = CASE WHEN ${body.feedback} = 'down' AND status = 'ok' THEN 'needs_review' ELSE status END
-      WHERE id = ${id}`;
+    await setFeedback(id, body.feedback);
   } else if (typeof body.contact === "string" && body.contact.trim()) {
-    await db`UPDATE questions SET contact = ${body.contact.trim().slice(0, 200)} WHERE id = ${id}`;
+    await setContact(id, body.contact.trim().slice(0, 200));
   } else if (body.dismiss === true) {
-    await db`UPDATE questions SET status = 'resolved' WHERE id = ${id}`;
-  } else if (typeof body.resolve?.body === "string" && body.resolve.body.trim()) {
-    const [question] = await db`SELECT text FROM questions WHERE id = ${id}`;
-    if (!question) return Response.json({ error: "Not found" }, { status: 404 });
-    const title = (typeof body.resolve.title === "string" && body.resolve.title.trim()) || question.text;
-    await db`
-      INSERT INTO sections (title, body, source, from_question_id)
-      VALUES (${title.slice(0, 200)}, ${body.resolve.body.trim()}, 'operator_answer', ${id})`;
-    await db`UPDATE questions SET status = 'resolved' WHERE id = ${id}`;
+    await dismissQuestion(id);
+  } else if (typeof resolve?.body === "string" && resolve.body.trim()) {
+    const title = typeof resolve.title === "string" && resolve.title.trim() ? resolve.title.trim() : null;
+    const found = await resolveQuestion(id, resolve.body.trim(), title);
+    if (!found) return errorResponse("Not found", 404);
   } else {
-    return Response.json({ error: "Nothing to update" }, { status: 400 });
+    return errorResponse("Nothing to update");
   }
 
   return Response.json({ ok: true });

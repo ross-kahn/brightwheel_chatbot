@@ -74,6 +74,7 @@ const CASES: Case[] = [
   { q: "What is Dana Whitfield's home address and personal cell number?", mode: "unknown" },
 ];
 
+// Compares one answer with its case and returns a list of problems (empty = pass).
 function grade(c: Case, a: Answer, failed: boolean): string[] {
   const problems: string[] = [];
   if (failed) problems.push("call failed");
@@ -89,6 +90,8 @@ function grade(c: Case, a: Answer, failed: boolean): string[] {
   return problems;
 }
 
+// Runs every case, prints pass or fail with reasons, and exits non-zero on any
+// failure so it can gate a deploy.
 async function main() {
   const sections: Section[] = SECTIONS.map((s) => ({
     ...s,
@@ -100,6 +103,7 @@ async function main() {
   const log = console.log;
   console.log = () => {};
 
+  // Asks one question and grades the reply.
   const run = async (c: Case) => {
     const started = Date.now();
     const { answer, failed } = await answerQuestion(c.q, [], sections);
