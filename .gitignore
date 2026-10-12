@@ -2,10 +2,24 @@
 .env*
 !.env.example
 
-# dependencies and build output
-node_modules/
-.next/
-.vercel/
+# dependencies
+/node_modules
+
+# next.js
+/.next/
+/out/
+next-env.d.ts
+*.tsbuildinfo
+
+# vercel
+.vercel
+
+# misc
+.DS_Store
+npm-debug.log*
 
 # editor tooling
 .ruby-lsp/
+
+.vercel
+.env*
