@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "db:seed": "tsx --env-file=.env.local db/seed.ts",
-    "try:answers": "tsx --env-file=.env.local db/try-answers.ts"
+    "eval": "tsx --env-file=.env.local db/eval.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.133.0",
