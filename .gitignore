@@ -1,0 +1,11 @@
+# secrets
+.env*
+!.env.example
+
+# dependencies and build output
+node_modules/
+.next/
+.vercel/
+
+# editor tooling
+.ruby-lsp/
