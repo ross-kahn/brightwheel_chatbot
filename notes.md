@@ -20,6 +20,9 @@ Time logging:
 Notes - 10 min
 Planning - 20 min
 Initial prototyping - 45 min
+Writeup - 15 min
+Code cleanup - 15 min
+Unit testing - 15 min
 
 Ok let's work on the writeup. Among the other things to talk about, I want to focus on usability, observability, iterative improvement of the knowledge base, token usage considerations, storage considerations, privacy considerations, security (how easily could malicious users get sensitive information from the kowledge base or previously asked questions), architecture considerations for a production MVP, and maybe more.
 

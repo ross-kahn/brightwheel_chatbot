@@ -10,10 +10,11 @@ export function sendJson(url: string, method: "POST" | "PUT" | "PATCH" | "DELETE
   });
 }
 
-// Server side: reads a JSON body, returning null instead of throwing on bad input.
+// Server side: reads a JSON object body, returning null instead of throwing on
+// bad input or on JSON that isn't an object.
 export async function readJson(request: Request): Promise<Record<string, unknown> | null> {
   const body = await request.json().catch(() => null);
-  return body && typeof body === "object" ? body : null;
+  return body && typeof body === "object" && !Array.isArray(body) ? body : null;
 }
 
 // Server side: a JSON error response with a message the UI can show.
