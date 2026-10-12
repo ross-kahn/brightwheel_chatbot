@@ -18,3 +18,5 @@
 
 Time logging:
 Notes - 10 min
+Planning - 20 min
+Initial prototyping - 30 min
