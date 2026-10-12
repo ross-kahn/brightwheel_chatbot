@@ -35,6 +35,20 @@ If one of those has already been answered by an earlier visitor, pick another, o
 
 **6. Look at the log.** **All questions** in the staff view shows every question, how it was handled, and which topics needed staff most.
 
+## Tech stack
+
+| Part | What the prototype uses |
+|---|---|
+| App | Next.js 16 (App Router, TypeScript) with Tailwind, as one deployable |
+| Hosting | Vercel, on the free plan |
+| Database | Neon Postgres, connected through Vercel |
+| Model | Claude Opus 5.5 at low effort, through the Anthropic TypeScript SDK |
+| API key | A personal Anthropic key with a spend limit |
+| Secrets | Stored as Vercel environment variables. Nothing secret is in the repo; local runs read a gitignored `.env.local` |
+| Tests | Vitest for unit tests, plus a small eval script for model output |
+
+The app was written with help from Claude Code, running Claude Opus 5.5 at medium effort.
+
 ## Run it locally
 
 Requires Node 22, a Postgres database (the project uses Neon) and an Anthropic API key.
